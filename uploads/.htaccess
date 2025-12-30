@@ -1,0 +1,23 @@
+# Allow access to images and files but prevent PHP execution
+<FilesMatch "\.php$">
+    Order deny,allow
+    Deny from all
+</FilesMatch>
+
+# Alternative for Apache 2.4+
+<IfModule mod_authz_core.c>
+    <FilesMatch "\.php$">
+        Require all denied
+    </FilesMatch>
+</IfModule>
+
+# Disable script execution
+Options -ExecCGI
+AddHandler cgi-script .php .php3 .php4 .php5 .phtml .pl .py .jsp .asp .htm .shtml .sh .cgi
+
+# Only allow specific file types
+<FilesMatch "\.(jpg|jpeg|png|gif|webp|svg|ico|pdf|doc|docx|xls|xlsx|ppt|pptx|zip|rar|mp4|avi|mov|webm)$">
+    Order allow,deny
+    Allow from all
+</FilesMatch>
+

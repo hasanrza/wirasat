@@ -1,0 +1,51 @@
+# API Security and URL Rewriting
+<IfModule mod_rewrite.c>
+    RewriteEngine On
+    
+    # Prevent directory listing
+    Options -Indexes
+    
+    # Deny access to config files
+    <FilesMatch "^(config\.php|\.htaccess)$">
+        Order allow,deny
+        Deny from all
+    </FilesMatch>
+    
+    # Allow only GET requests
+    RewriteCond %{REQUEST_METHOD} !^(GET|OPTIONS)$
+    RewriteRule ^(.*)$ - [F,L]
+    
+    # Allow direct access to API files (CompanyProfileApi.php, etc.)
+    RewriteCond %{REQUEST_FILENAME} -f
+    RewriteRule ^(.*)$ - [L]
+    
+    # Route all other requests to index.php
+    RewriteCond %{REQUEST_FILENAME} !-f
+    RewriteCond %{REQUEST_FILENAME} !-d
+    RewriteRule ^(.*)$ index.php [QSA,L]
+</IfModule>
+
+# Security Headers
+<IfModule mod_headers.c>
+    # Prevent clickjacking
+    Header set X-Frame-Options "DENY"
+    
+    # XSS Protection
+    Header set X-XSS-Protection "1; mode=block"
+    
+    # Prevent MIME type sniffing
+    Header set X-Content-Type-Options "nosniff"
+    
+    # Referrer Policy
+    Header set Referrer-Policy "strict-origin-when-cross-origin"
+</IfModule>
+
+# Disable server signature
+ServerSignature Off
+
+# PHP Settings
+<IfModule mod_php7.c>
+    php_flag display_errors Off
+    php_flag log_errors On
+</IfModule>
+

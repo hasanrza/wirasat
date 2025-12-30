@@ -1,0 +1,109 @@
+# Enable Rewrite Engine
+RewriteEngine On
+
+# Set the base directory
+RewriteBase /wirasat/
+
+# ============================================
+# SECURITY RULES
+# ============================================
+
+# Prevent access to sensitive directories
+RewriteRule ^classes/ - [F,L]
+RewriteRule ^config/ - [F,L]
+RewriteRule ^controllers/ - [F,L]
+RewriteRule ^include/ - [F,L]
+
+# Block access to .htaccess file
+<Files .htaccess>
+    Order allow,deny
+    Deny from all
+</Files>
+
+# Block access to PHP files in uploads directory
+RewriteRule ^uploads/.*\.php$ - [F,L]
+
+# Protect against SQL injection and other attacks
+RewriteCond %{QUERY_STRING} (\<|%3C).*script.*(\>|%3E) [NC,OR]
+RewriteCond %{QUERY_STRING} GLOBALS(=|\[|\%[0-9A-Z]{0,2}) [OR]
+RewriteCond %{QUERY_STRING} _REQUEST(=|\[|\%[0-9A-Z]{0,2})
+RewriteRule .* - [F]
+
+# Block common exploits
+RewriteCond %{REQUEST_METHOD} ^(TRACE|DELETE|TRACK) [NC]
+RewriteRule .* - [F]
+
+# Prevent directory listing
+Options -Indexes
+
+# Disable server signature
+ServerSignature Off
+
+# ============================================
+# SECURITY HEADERS
+# ============================================
+
+<IfModule mod_headers.c>
+    # Prevent clickjacking
+    Header always set X-Frame-Options "SAMEORIGIN"
+    
+    # Prevent MIME type sniffing
+    Header always set X-Content-Type-Options "nosniff"
+    
+    # Enable XSS protection
+    Header always set X-XSS-Protection "1; mode=block"
+    
+    # Referrer Policy
+    Header always set Referrer-Policy "strict-origin-when-cross-origin"
+    
+    # Content Security Policy (allows same origin)
+    Header always set Content-Security-Policy "default-src 'self' 'unsafe-inline' 'unsafe-eval' https: data: blob:;"
+    
+    # Remove PHP version from headers
+    Header unset X-Powered-By
+    
+    # Cache control for sensitive pages
+    Header always set Cache-Control "no-store, no-cache, must-revalidate, private"
+    Header always set Pragma "no-cache"
+</IfModule>
+
+# ============================================
+# URL REWRITING (Clean URLs)
+# ============================================
+
+# If the request is for a real directory, stop processing
+RewriteCond %{REQUEST_FILENAME} -d
+RewriteRule ^ - [L]
+
+# If the request is for a real file, stop processing
+RewriteCond %{REQUEST_FILENAME} -f
+RewriteRule ^ - [L]
+
+# Remove .php extension from URLs
+# Redirect /page.php to /page (external redirect)
+RewriteCond %{THE_REQUEST} \s/wirasat/([^.]+)\.php[\s?] [NC]
+RewriteRule ^ %1 [R=301,L]
+
+# Internally rewrite /page to /page.php
+RewriteCond %{REQUEST_FILENAME}.php -f
+RewriteRule ^([^/]+)/?$ $1.php [L]
+
+# Handle subdirectory requests
+RewriteCond %{REQUEST_FILENAME}.php -f
+RewriteRule ^(.+)/?$ $1.php [L]
+
+# ============================================
+# FILE TYPE PROTECTION
+# ============================================
+
+# Block access to sensitive file types
+<FilesMatch "\.(sql|log|ini|env|bak|config|yml|yaml|json|lock|md)$">
+    Order allow,deny
+    Deny from all
+</FilesMatch>
+
+# Set default charset
+AddDefaultCharset UTF-8
+
+# Disable ETag (security + performance)
+FileETag None
