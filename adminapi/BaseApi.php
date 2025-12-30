@@ -113,6 +113,69 @@ class BaseApi {
     }
     
     /**
+     * Get category for file field
+     * @param string $field
+     * @return string
+     */
+    private function getFileCategory($field) {
+        // Map file fields to their upload categories
+        $categoryMap = [
+            // CEO category
+            'ceo_picture_1' => 'ceo',
+            'ceo_picture_2' => 'ceo',
+            
+            // Company category
+            'company_logo' => 'company',
+            'company_background' => 'company',
+            'footer_image' => 'company',
+            
+            // News category
+            'news_image' => 'news',
+            'news_video' => 'news',
+            
+            // Projects category
+            'project_map_thumbnail' => 'projects',
+            'project_map_full' => 'projects',
+            'project_payment_plan' => 'projects',
+            'project_amenities_image' => 'projects',
+            'document_thumbnail' => 'projects',
+            'document_file' => 'projects',
+            
+            // Services category
+            'service_image' => 'services',
+            
+            // Gallery category (if needed)
+            'picture_file' => 'gallery',
+            'picture_thumbnail' => 'gallery',
+            'video_thumbnail' => 'gallery',
+            
+            // About Us category (if needed)
+            'about_us_video' => 'about',
+        ];
+        
+        return $categoryMap[$field] ?? 'uploads';
+    }
+    
+    /**
+     * Extract category and filename from path
+     * @param string $path
+     * @return array ['category' => string, 'filename' => string]
+     */
+    private function extractCategoryFromPath($path) {
+        // Check if path already contains dashboard/uploads/{category}/ pattern
+        if (preg_match('#dashboard/uploads/([^/]+)/([^/]+)$#', $path, $matches)) {
+            return ['category' => $matches[1], 'filename' => $matches[2]];
+        }
+        
+        // Check if path contains uploads/{category}/ pattern
+        if (preg_match('#uploads/([^/]+)/([^/]+)$#', $path, $matches)) {
+            return ['category' => $matches[1], 'filename' => $matches[2]];
+        }
+        
+        return null;
+    }
+    
+    /**
      * Format file paths to full URLs
      * @param array $data
      * @param array $fileFields
@@ -131,12 +194,20 @@ class BaseApi {
                 if (!empty($data[$field]) && is_string($data[$field])) {
                     // If path doesn't start with http, prepend base URL
                     if (strpos($data[$field], 'http') !== 0) {
-                        // Ensure path starts with / if it doesn't already
-                        $path = $data[$field];
-                        if (strpos($path, '/') !== 0) {
-                            $path = '/' . $path;
+                        $pathInfo = $this->extractCategoryFromPath($data[$field]);
+                        
+                        if ($pathInfo) {
+                            // Use category from path if available
+                            $category = $pathInfo['category'];
+                            $filename = $pathInfo['filename'];
+                        } else {
+                            // Use field-based category mapping
+                            $category = $this->getFileCategory($field);
+                            $filename = basename($data[$field]);
                         }
-                        $data[$field] = $baseUrl . $path;
+                        
+                        // Construct full URL: https://cms.wirasat.com/dashboard/uploads/{category}/{filename}
+                        $data[$field] = $baseUrl . '/dashboard/uploads/' . $category . '/' . $filename;
                     }
                 }
             }
@@ -148,12 +219,20 @@ class BaseApi {
                         if (!empty($record[$field]) && is_string($record[$field])) {
                             // If path doesn't start with http, prepend base URL
                             if (strpos($record[$field], 'http') !== 0) {
-                                // Ensure path starts with / if it doesn't already
-                                $path = $record[$field];
-                                if (strpos($path, '/') !== 0) {
-                                    $path = '/' . $path;
+                                $pathInfo = $this->extractCategoryFromPath($record[$field]);
+                                
+                                if ($pathInfo) {
+                                    // Use category from path if available
+                                    $category = $pathInfo['category'];
+                                    $filename = $pathInfo['filename'];
+                                } else {
+                                    // Use field-based category mapping
+                                    $category = $this->getFileCategory($field);
+                                    $filename = basename($record[$field]);
                                 }
-                                $record[$field] = $baseUrl . $path;
+                                
+                                // Construct full URL: https://cms.wirasat.com/dashboard/uploads/{category}/{filename}
+                                $record[$field] = $baseUrl . '/dashboard/uploads/' . $category . '/' . $filename;
                             }
                         }
                     }
@@ -169,11 +248,8 @@ class BaseApi {
      * @return string
      */
     private function getBaseUrl() {
-        $protocol = (!empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off') ? 'https' : 'http';
-        $host = $_SERVER['HTTP_HOST'] ?? 'localhost';
-        $script = dirname($_SERVER['SCRIPT_NAME']);
-        $basePath = str_replace('/adminapi', '', $script);
-        return $protocol . '://' . $host . $basePath;
+        // Use the CMS base URL
+        return 'https://cms.wirasat.com';
     }
 }
 ?>
