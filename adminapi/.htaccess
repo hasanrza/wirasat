@@ -11,8 +11,8 @@
         Deny from all
     </FilesMatch>
     
-    # Allow only GET requests
-    RewriteCond %{REQUEST_METHOD} !^(GET|OPTIONS)$
+    # Allow GET, POST, and OPTIONS requests
+    RewriteCond %{REQUEST_METHOD} !^(GET|POST|OPTIONS)$
     RewriteRule ^(.*)$ - [F,L]
     
     # Allow direct access to API files (CompanyProfileApi.php, etc.)

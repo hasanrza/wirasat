@@ -35,6 +35,19 @@ class AuthMiddleware {
             $token = $_SERVER['HTTP_X_API_TOKEN'];
         } elseif (isset($_GET['token'])) {
             $token = $_GET['token'];
+        } elseif (isset($_POST['token'])) {
+            // Also check POST body as fallback
+            $token = $_POST['token'];
+        } else {
+            // Check JSON POST body for token
+            $contentType = $_SERVER['CONTENT_TYPE'] ?? '';
+            if (strpos($contentType, 'application/json') !== false) {
+                $json = file_get_contents('php://input');
+                $data = json_decode($json, true);
+                if (isset($data['token'])) {
+                    $token = $data['token'];
+                }
+            }
         }
         
         // Validate token
@@ -83,7 +96,7 @@ class AuthMiddleware {
             }
         }
         
-        header('Access-Control-Allow-Methods: GET, OPTIONS');
+        header('Access-Control-Allow-Methods: GET, POST, OPTIONS');
         header('Access-Control-Allow-Headers: Content-Type, ' . API_TOKEN_HEADER);
         header('Access-Control-Max-Age: 3600');
         
